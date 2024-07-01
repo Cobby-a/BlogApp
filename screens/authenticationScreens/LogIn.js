@@ -1,15 +1,71 @@
 import { View, Text, StyleSheet, Image, ScrollView } from "react-native";
 import { Button, Input} from "@rneui/themed";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import React, { useState, useContext } from "react";
 import { FontAwesome } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { color, font } from "../../global/styles"
+import { Context } from "../../global/globalContext";
+import { Snackbar } from "react-native-paper";
 
+import { useNavigation } from '@react-navigation/native';
 
-const LogInScreen = ({navigation}) =>{
+const LogInScreen = ({props}) =>{
+
+    const navigation = useNavigation();
+
+    const globalContext = useContext(Context)
+    const { setIsLoggedIn, isLoggedIn, appSettings, domain, userObj, setUserObj, setToken } = globalContext;
+
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
     const [passwordVisible, setPasswordVisible] = useState(true)
-    const [passwordVisible1, setPasswordVisible1] = useState(true)
+
+
+    const [isValid, setIsValid] = useState(true)
+    
+    function handleLogin() {
+        let username = "";
+        let body = JSON.stringify({
+            'username': email.toLowerCase(),
+            'password': password
+        })
+
+        fetch(`${domain}/api/user/login-user/`, {
+          method: 'POST',
+          headers:{
+            'Content-Type' : 'application/json'
+            },
+        body:body
+          })
+          .then(res => {
+            if (res.ok) {
+              return(
+                res.json()
+                // navigation.navigate('MainHome',{
+                //     username : username
+                // })
+              )
+            } else {
+            setIsValid({bool : true, boolSnack: true, message: "Invalid Credentials Please Enter again"});
+              throw res.json()
+            }
+          })
+          .then(json => {
+            setUserObj(json),
+            setIsLoggedIn(true),
+            setToken(json.token),
+            console.log(json.username),
+            username = json.username
+           
+          })
+          .catch(error => {
+            console.log(error)
+          })
+        //   if(isLoggedIn){
+            
+        //   }
+      }
     return(
         <View  style={styles.container}>
             <ScrollView>
@@ -26,8 +82,8 @@ const LogInScreen = ({navigation}) =>{
                 />}
                     // autoFocus 
                     type="email"
-                    // value={email}
-                    // onChangeText={(email)=>setEmail(email)}
+                    value={email}
+                    onChangeText={(email)=>setEmail(email)}
                     style={styles.input}
                     inputContainerStyle={styles.inputContainer}
                     inputStyle={styles.inputstyle}
@@ -48,14 +104,14 @@ const LogInScreen = ({navigation}) =>{
                 />}
                     secureTextEntry = {passwordVisible}
                     type="password"
-                    // value={password}
-                    // onChangeText={(password)=>setPassword(password)}
+                    value={password}
+                    onChangeText={(password)=>setPassword(password)}
                     style={styles.input}
                     inputContainerStyle={styles.inputContainer}
                     inputStyle={styles.inputstyle}
                     />
             </View>
-            <Button onPress={()=>navigation.navigate('LogIn')} containerStyle={styles.button} titleStyle={{fontSize: 16,fontFamily: font.medium,}} buttonStyle={styles.buttonS} title='Log in' activeOpacity={0.9}/>
+            <Button onPress={()=>handleLogin()} containerStyle={styles.button} titleStyle={{fontSize: 16,fontFamily: font.medium,}} buttonStyle={styles.buttonS} title='Log in' activeOpacity={0.9}/>
             <View style={{flexDirection: 'row', alignItems: 'center'}}>
                 <View style={{flex: 1, height: 1, backgroundColor: color.lightGrey}} />
                 <View><Text style={{width: 50, textAlign: 'center', fontSize: 16, fontFamily: font.regular, color: color.deepGrey}}>or</Text></View>
@@ -70,9 +126,18 @@ const LogInScreen = ({navigation}) =>{
               containerStyle={{width: "100%",marginVertical: 16,}}
               activeOpacity={0.8}
             />
-            <Text style={{fontFamily: font.regular, fontSize: 15, color: '#1E1D1D'}}>Don't have an account? <Text style={{color:color.primary, fontFamily: font.semiBold}} onPress={()=>navigation.navigate('LogIn')}>Sign up here</Text></Text>
+            <Text style={{fontFamily: font.regular, fontSize: 15, color: '#1E1D1D'}}>Don't have an account? <Text style={{color:color.primary, fontFamily: font.semiBold}} onPress={()=>navigation.navigate('SignUp')}>Sign up here</Text></Text>
             </View>
             </ScrollView>
+            <Snackbar 
+                visible={isValid.boolSnack}
+                duration={4000}
+                onDismiss={()=>{setIsValid({boolSnack: false})}}
+                style={{backgroundColor:"red",}}
+                
+            >
+                {isValid.message}
+            </Snackbar>
             <StatusBar style="auto" translucent={false} />
         </View>
         

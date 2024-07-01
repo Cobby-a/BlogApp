@@ -5,6 +5,7 @@ export const font = {
     semiBold : "Poppins_600SemiBold",
     bold : "Poppins_700Bold",
     extraBold : "Poppins_800ExtraBold",
+    italicRegular: "Poppins_400Regular_Italic",
 }
 
 export const color = {
@@ -21,6 +22,7 @@ export const color = {
     deepGrey: "#777777",
     // darkBrown : "#56421E",
     lightGrey : "#DCDCDC",
+    veryLightGrey : "#EFEFEF",
     // background : "#F7F9FF",
     // red : "#BE1538", 
 }

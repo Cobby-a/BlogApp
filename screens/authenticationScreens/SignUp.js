@@ -1,15 +1,96 @@
 import { View, Text, StyleSheet, Image, ScrollView } from "react-native";
 import { Button, Input} from "@rneui/themed";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { FontAwesome } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { color, font } from "../../global/styles"
+import { Snackbar } from "react-native-paper";
+import { Context } from "../../global/globalContext";
 
 
 const SignUpScreen = ({navigation}) =>{
+    const globalContext = useContext(Context)
+    const { setIsLoggedIn, appSettings, domain, userObj, setUserObj, setToken } = globalContext;
+
     const [passwordVisible, setPasswordVisible] = useState(true)
     const [passwordVisible1, setPasswordVisible1] = useState(true)
+
+    const [email, setEmail] = useState("")
+    const [username, setUsername] = useState("")
+    const [password, setPassword] = useState("")
+    const [password1, setPassword1] = useState("")
+    const [isValid, setIsValid] = useState(true)
+
+    function handleLogin() {
+        let regex = /^[a-zA-Z\s]+$/;
+
+        if(username.length == 0){
+            setIsValid({bool : true, boolSnack: true, message: "Username field cannot be empty"})
+            return;
+        }
+        if(username.charAt(0) == " "){
+            setIsValid({bool : true, boolSnack: true, message: "Your first character cannot be empty, please clear the white space at begining of name"})
+            return;
+        }
+        if(username.length < 3){
+            setIsValid({bool : true, boolSnack: true, message: "Username must have at least 3 characters"})
+            return;
+        }
+        if(regex.test(username) == false){
+            setIsValid({bool : true, boolSnack: true, message: "Invalid input type for name. Only accepts string characters"})
+            return;
+        }
+        if(email.length == 0){
+            setIsValid({bool : true, boolSnack: true, message: "Cannot have an empty field for email"})
+            return;
+        }
+        if(password.length == 0){
+            setIsValid({bool : true, boolSnack: true, message: "Cannot have an empty field for password"})
+            return;
+        }
+        if(password.length < 8){
+            setIsValid({bool : true, boolSnack: true, message: "password must be at least 8 characters"})
+            return;
+        }
+        if(password === password1){
+        let body = JSON.stringify({
+            'username': username,
+            'email':email.toLowerCase(),
+            'password': password
+        })
+
+        fetch(`${domain}/api/user/create-user/`, {
+          method: 'POST',
+          headers:{
+            'Content-Type' : 'application/json'
+            },
+        body:body
+          })
+          .then(res => {
+            if (res.ok) {
+              return res.json()
+            } else {
+            setIsValid({bool : true, boolSnack: true, message: "User already exists"});
+              throw res.json()
+            }
+          })
+          .then(json => {
+            setUserObj(json),
+            // setIsLoggedIn(true),
+            setToken(json.token)
+          })
+          .catch(error => {
+            console.log(error)
+          })
+          
+        }
+        else{
+            setIsValid({bool : true, boolSnack: true, message: "passwords do not match"})
+            return;
+        }
+        navigation.navigate('LogIn')
+        }
     return(
         <View  style={styles.container}>
             <ScrollView>
@@ -25,8 +106,8 @@ const SignUpScreen = ({navigation}) =>{
                         color= '#999999'
                 />}
                     type="text"
-                    // value={name}
-                    // onChangeText={(name)=>setName(name)}
+                    value={username}
+                    onChangeText={(username)=>setUsername(username)}
                     style={styles.input}
                     inputContainerStyle={styles.inputContainer}
                     inputStyle={styles.inputstyle}
@@ -41,8 +122,8 @@ const SignUpScreen = ({navigation}) =>{
                 />}
                     // autoFocus 
                     type="email"
-                    // value={email}
-                    // onChangeText={(email)=>setEmail(email)}
+                    value={email}
+                    onChangeText={(email)=>setEmail(email)}
                     style={styles.input}
                     inputContainerStyle={styles.inputContainer}
                     inputStyle={styles.inputstyle}
@@ -63,8 +144,8 @@ const SignUpScreen = ({navigation}) =>{
                 />}
                     secureTextEntry = {passwordVisible}
                     type="password"
-                    // value={password}
-                    // onChangeText={(password)=>setPassword(password)}
+                    value={password}
+                    onChangeText={(password)=>setPassword(password)}
                     style={styles.input}
                     inputContainerStyle={styles.inputContainer}
                     inputStyle={styles.inputstyle}
@@ -84,14 +165,14 @@ const SignUpScreen = ({navigation}) =>{
                 />}
                     secureTextEntry = {passwordVisible1}
                     type="password1"
-                    // value={password1}
-                    // onChangeText={(password1)=>setPassword1(password1)}
+                    value={password1}
+                    onChangeText={(password1)=>setPassword1(password1)}
                     style={styles.input}
                     inputContainerStyle={styles.inputContainer}
                     inputStyle={styles.inputstyle}
                     />
             </View>
-            <Button onPress={()=>navigation.navigate('LogIn')} containerStyle={styles.button} titleStyle={{fontSize: 16,fontFamily: font.medium,}} buttonStyle={styles.buttonS} title='Sign up' activeOpacity={0.9}/>
+            <Button onPress={()=>handleLogin()} containerStyle={styles.button} titleStyle={{fontSize: 16,fontFamily: font.medium,}} buttonStyle={styles.buttonS} title='Sign up' activeOpacity={0.9}/>
             <View style={{flexDirection: 'row', alignItems: 'center'}}>
                 <View style={{flex: 1, height: 1, backgroundColor: color.lightGrey}} />
                 <View><Text style={{width: 50, textAlign: 'center', fontSize: 16, fontFamily: font.regular, color: color.deepGrey}}>or</Text></View>
@@ -109,6 +190,15 @@ const SignUpScreen = ({navigation}) =>{
             <Text style={{fontFamily: font.regular, fontSize: 15, color: '#1E1D1D'}}>Already have an account? <Text style={{color:color.primary, fontFamily: font.semiBold}} onPress={()=>navigation.navigate('LogIn')}>Log in here</Text></Text>
             </View>
             </ScrollView>
+            <Snackbar 
+                visible={isValid.boolSnack}
+                duration={4000}
+                onDismiss={()=>{setIsValid({boolSnack: false})}}
+                style={{backgroundColor:"red",}}
+                
+            >
+                {isValid.message}
+            </Snackbar>
             <StatusBar style="auto" translucent={false} />
         </View>
         
